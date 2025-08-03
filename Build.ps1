@@ -47,13 +47,13 @@ function Build-Executables {
     Write-Host "Compiling PowerShell scripts..." -ForegroundColor Green
     if (-not (Get-Module -ListAvailable -Name PS2EXE)) { Write-Error "Module PS2EXE is not installed. Run '.\Build.ps1 -Target setup' as Admin."; exit 1 }
 
-    # Compile Add-Text as a windowed app to hide the console
-    Write-Host "Compiling Add-Text.exe (no console)..." -ForegroundColor DarkGray
-    Invoke-PS2EXE -InputFile (Join-Path $SourceDir "Add-Text.ps1") -OutputFile (Join-Path $BuildDir "Add-Text.exe") -noConsole
-
-    # Compile Expand-Text as a console app so its output can be captured by AHK
-    Write-Host "Compiling Expand-Text.exe (with console for output capture)..." -ForegroundColor DarkGray
-    Invoke-PS2EXE -InputFile (Join-Path $SourceDir "Expand-Text.ps1") -OutputFile (Join-Path $BuildDir "Expand-Text.exe")
+    # ✅ Compile BOTH scripts with -noConsole to create windowed apps
+    foreach ($script in $PowerShellScripts) {
+        $inputFile = Join-Path $SourceDir $script
+        $outputFile = Join-Path $BuildDir ($script -replace '.ps1$', '.exe')
+        Write-Host "Compiling $script (no console)..." -ForegroundColor DarkGray
+        Invoke-PS2EXE -InputFile $inputFile -OutputFile $outputFile -noConsole
+    }
 
     Write-Host "Compiling AutoHotkey script..." -ForegroundColor Green
     $ahkCompiler = Get-Command Ahk2Exe.exe -ErrorAction SilentlyContinue
@@ -61,16 +61,13 @@ function Build-Executables {
         Write-Error "AutoHotkey Compiler (Ahk2Exe.exe) not found. Please run '.\Build.ps1 -Target setup' as Admin."
         exit 1
     }
-
-    # Use the exact base file path that previously worked for you.
+    
     $ahkBaseFile = Join-Path $AhkDir "v2\AutoHotkey64.exe"
-
     $ahkInput = Join-Path $SourceDir $AutoHotkeyScript
     $ahkOutput = Join-Path $BuildDir ($AutoHotkeyScript -replace '.ahk$', '.exe')
-
-    # Use the exact compiler command that previously worked for you.
+    
     & $ahkCompiler.Source /in "`"$ahkInput`"" /out "`"$ahkOutput`"" /base "`"$ahkBaseFile`""
-
+    
     Write-Host "Build complete." -ForegroundColor Cyan
 }
 
@@ -133,18 +130,64 @@ switch ($Target) {
 
     "build" { Build-Executables }
 
-    "install" {
+"install" {
         if (-not (Test-Admin)) { Write-Error "Installation requires Administrator privileges."; exit 1 }
         Build-Executables
-        Write-Host "Installing..." -ForegroundColor Green; Copy-Item -Path "$BuildDir\*" -Destination $InstallDir -Recurse -Force
-        $shortcutPath = Join-Path ([Environment]::GetFolderPath('Startup')) "$AppName.lnk"; $targetPath = Join-Path $InstallDir "TylexLauncher.exe"
-        $wshell = New-Object -ComObject WScript.Shell; $shortcut = $wshell.CreateShortcut($shortcutPath); $shortcut.TargetPath = $targetPath; $shortcut.Save()
-        Write-Host "Installation complete." -ForegroundColor Cyan
+        
+        Write-Host "Creating installation directory at '$InstallDir'..." -ForegroundColor Green
+        New-Item -Path $InstallDir -ItemType Directory -Force | Out-Null
+        
+        Write-Host "Copying application files..." -ForegroundColor Green
+        Copy-Item -Path "$BuildDir\*" -Destination $InstallDir -Recurse -Force
+
+        Write-Host "Adding installation directory to system PATH..." -ForegroundColor Green
+        $machinePath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
+        if ($machinePath -notlike "*$InstallDir*") {
+            $newPath = "$machinePath;$InstallDir"
+            [System.Environment]::SetEnvironmentVariable('Path', $newPath, 'Machine')
+            $env:Path = $newPath
+        }
+        
+        # ✅ Create user config directory and copy default config.ini
+        Write-Host "Setting up user configuration..." -ForegroundColor Green
+        $userConfigDir = Join-Path $env:APPDATA $AppName
+        New-Item -Path $userConfigDir -ItemType Directory -Force | Out-Null
+        $destConfigFile = Join-Path $userConfigDir "config.ini"
+        if (-not (Test-Path $destConfigFile)) {
+            Write-Host "Copying default config.ini to '$userConfigDir'..." -ForegroundColor DarkGray
+            Copy-Item -Path (Join-Path $SourceDir "config.ini") -Destination $destConfigFile
+        }
+
+        # Create Startup shortcut for auto-launch
+        Write-Host "Creating startup shortcut..." -ForegroundColor Green
+        $startupShortcutPath = Join-Path ([Environment]::GetFolderPath('Startup')) "$AppName.lnk"
+        $targetPath = Join-Path $InstallDir "TylexLauncher.exe"
+        $wshell = New-Object -ComObject WScript.Shell
+        $shortcut = $wshell.CreateShortcut($startupShortcutPath)
+        $shortcut.TargetPath = $targetPath
+        $shortcut.Save()
+
+        # Create Start Menu shortcut for visibility
+        Write-Host "Creating Start Menu entry..." -ForegroundColor Green
+        $startMenuPath = Join-Path ([System.Environment]::GetFolderPath('Programs')) $AppName
+        New-Item -Path $startMenuPath -ItemType Directory -Force | Out-Null
+        $startMenuShortcutPath = Join-Path $startMenuPath "$AppName Launcher.lnk"
+        if (-not (Test-Path $startMenuShortcutPath)) {
+            $shortcut = $wshell.CreateShortcut($startMenuShortcutPath)
+            $shortcut.TargetPath = $targetPath
+            $shortcut.Save()
+        }
+        
+        Write-Host "✅ Installation complete! Users can edit their hotkeys in %APPDATA%\Tylex\config.ini" -ForegroundColor Cyan
     }
 
     "uninstall" {
         if (-not (Test-Admin)) { Write-Error "Uninstallation requires Administrator privileges."; exit 1 }
+        # Remove Startup Shortcut
         $shortcutPath = Join-Path ([Environment]::GetFolderPath('Startup')) "$AppName.lnk"; if (Test-Path $shortcutPath) { Remove-Item $shortcutPath -Force }
+        # ✅ Remove Start Menu Shortcut and Folder
+        $startMenuPath = Join-Path ([System.Environment]::GetFolderPath('Programs')) $AppName; if (Test-Path $startMenuPath) { Remove-Item $startMenuPath -Recurse -Force }
+        # Remove Installation Directory
         if (Test-Path $InstallDir) { Remove-Item $InstallDir -Recurse -Force }
         Write-Host "Uninstallation complete." -ForegroundColor Cyan
     }

@@ -1,24 +1,48 @@
-; Super/Windows key is "#"
-; z is the trigger key
-; Shift is "+"
+#Requires AutoHotkey v2.0
 
-; Super + z to run the expander script
-#z::
-{
-    ; Run the compiled script hidden, capture its process object
-    shell := ComObjCreate("WScript.Shell")
-    exec := shell.Exec("Expand-Text.exe")
+; --- Configuration ---
+; Define global variables that will hold the hotkey strings
+global expandHotkey := ""
+global addHotkey := ""
 
-    ; Read the standard output from the script after it finishes
-    result := exec.StdOut.ReadAll()
+; Define the path to the config file
+global configFile := A_ScriptDir "\config.ini"
 
-    ; Use AHK's more reliable SendInput to type the result
-    SendInput(result)
+if not FileExist(configFile)
+    configFile := A_AppData "\Tylex\config.ini"
+
+; --- Hotkey Actions ---
+; The functions that are called when a hotkey is pressed
+ExpandAction(*) {
+    Run("Expand-Text.exe")
 }
 
-; Super + Shift + z to run the add script
-#+z::
-{
-    ; Run the "Add" script, which has its own GUI
+AddAction(*) {
     Run("Add-Text.exe")
 }
+
+; --- Hotkey Reload Logic ---
+; This function reads the config and applies the hotkeys.
+ReloadHotkeys(*) {
+    ; Deactivate the old hotkeys before reading new ones
+    if (expandHotkey != "")
+        Hotkey(expandHotkey, "Off")
+    if (addHotkey != "")
+        Hotkey(addHotkey, "Off")
+        
+    ; Re-read the values from the config file, with defaults
+    expandHotkey := IniRead(configFile, "Hotkeys", "Expand", "#z")
+    addHotkey := IniRead(configFile, "Hotkeys", "Add", "#+z")
+
+    ; Activate the hotkeys with the new values
+    Hotkey(expandHotkey, ExpandAction)
+    Hotkey(addHotkey, AddAction)
+}
+
+; --- Initial Script Start ---
+; 1. Run the reload function once on startup to set the initial hotkeys
+ReloadHotkeys()
+
+; 2. Create a monitor that will call ReloadHotkeys whenever config.ini is saved
+monitor := FileChangeMonitor(configFile, ReloadHotkeys)
+monitor.Start() 

@@ -1,38 +1,43 @@
+# ✅ Enable modern visual styles for a nicer look
+[System.Windows.Forms.Application]::EnableVisualStyles()
+
 # Define Paths
 $dataDir = "$env:LOCALAPPDATA\Tylex"
 $expFile = "$dataDir\expansions.json"
 
 # Create directory and file if they don't exist
-if (-not (Test-Path $dataDir)) { New-Item -Path $dataDir -ItemType Directory | Out-Null }
+if (-not (Test-Path $dataDir)) { New-Item -Path $dataDir -ItemType Directory -Force | Out-Null }
 if (-not (Test-Path $expFile)) { '[]' | Set-Content -Path $expFile }
 
 # Prompt for Input
-# Load an assembly to use a simple graphical input box.
 Add-Type -AssemblyName Microsoft.VisualBasic
-
 $key = [Microsoft.VisualBasic.Interaction]::InputBox("Enter the new abbreviation (key):", "Add Tylex Expansion")
-if ([string]::IsNullOrWhiteSpace($key)) { return } # Exit if user cancels or enters nothing
-
+if ([string]::IsNullOrWhiteSpace($key)) { return }
 $value = [Microsoft.VisualBasic.Interaction]::InputBox("Enter the full text for '$key':", "Add Tylex Expansion")
-if ([string]::IsNullOrWhiteSpace($value)) { return } # Exit if user cancels
+if ([string]::IsNullOrWhiteSpace($value)) { return }
 
-# Add New Expansion and Save
-$expansions = Get-Content -Path $expFile | ConvertFrom-Json
+# Robustly read the entire file as a single raw string before parsing
+$jsonContent = Get-Content -Path $expFile -Raw -ErrorAction SilentlyContinue
+$expansions = if ($jsonContent) { @($jsonContent | ConvertFrom-Json) } else { @() }
 
-# Check if the key already exists
-if ($expansions | Where-Object { $_.key -eq $key }) {
-	[System.Windows.Forms.MessageBox]::Show("Error: Abbreviation '$key' already exists.", "Tylex", "OK", "Error")
-		return
+if ($expansions.key -contains $key) {
+    Add-Type -AssemblyName System.Windows.Forms
+    [void][System.Windows.Forms.MessageBox]::Show("Error: Abbreviation '$key' already exists.", "Tylex", "OK", "Error")
+    return
 }
 
-# Create a new PowerShell object for the expansion
-$newExpansion = [PSCustomObject]@{
-	key   = $key
-		value = $value
-		usage = 0
+$newExpansion = [PSCustomObject]@{ key = $key; value = $value; usage = 0 }
+$expansions += $newExpansion
+
+# --- MANUAL "PRETTY-PRINT" JSON SERIALIZATION ---
+$jsonParts = foreach ($item in $expansions) {
+    $escapedKey = $item.key -replace '\\', '\\' -replace '"', '\"'
+    $escapedValue = $item.value -replace '\\', '\\' -replace '"', '\"'
+    # Build a formatted, multi-line string for each object
+    "  {`n    `"key`": `"$escapedKey`",`n    `"value`": `"$escapedValue`",`n    `"usage`": $($item.usage)`n  }"
 }
+# Join the formatted parts and wrap in brackets for a valid, pretty JSON array
+"[`n" + ($jsonParts -join ",`n") + "`n]" | Set-Content -Path $expFile
 
-# Add the new object to the array and save back to the file
-($expansions + $newExpansion) | ConvertTo-Json | Set-Content -Path $expFile
-
-[System.Windows.Forms.MessageBox]::Show("Successfully added '$key'.", "Tylex", "OK", "Information")
+Add-Type -AssemblyName System.Windows.Forms
+[void][System.Windows.Forms.MessageBox]::Show("Successfully added '$key'.", "Tylex", "OK", "Information")
