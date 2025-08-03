@@ -30,7 +30,7 @@ winget install RAOEUS.Tylex
 ```
 ### Method 2: Build from Source
 
-If you want to modify the scripts or contribute to development, you can build the project directly from the source code. See the **[🛠️ Building from Source](https://www.google.com/search?q=%23%EF%B8%8F-building-from-source)** section below for detailed instructions.
+If you want to modify the scripts or contribute to development, you can build the project directly from the source code. See the **[Building from Source](#building-from-source)** section below for detailed instructions.
 
 ---
 
