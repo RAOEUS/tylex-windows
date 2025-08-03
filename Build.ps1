@@ -46,11 +46,14 @@ function Build-Executables {
 
     Write-Host "Compiling PowerShell scripts..." -ForegroundColor Green
     if (-not (Get-Module -ListAvailable -Name PS2EXE)) { Write-Error "Module PS2EXE is not installed. Run '.\Build.ps1 -Target setup' as Admin."; exit 1 }
-    foreach ($script in $PowerShellScripts) {
-        $inputFile = Join-Path $SourceDir $script
-        $outputFile = Join-Path $BuildDir ($script -replace '.ps1$', '.exe')
-        Invoke-PS2EXE -InputFile $inputFile -OutputFile $outputFile
-    }
+
+    # Compile Add-Text as a windowed app to hide the console
+    Write-Host "Compiling Add-Text.exe (no console)..." -ForegroundColor DarkGray
+    Invoke-PS2EXE -InputFile (Join-Path $SourceDir "Add-Text.ps1") -OutputFile (Join-Path $BuildDir "Add-Text.exe") -noConsole
+
+    # Compile Expand-Text as a console app so its output can be captured by AHK
+    Write-Host "Compiling Expand-Text.exe (with console for output capture)..." -ForegroundColor DarkGray
+    Invoke-PS2EXE -InputFile (Join-Path $SourceDir "Expand-Text.ps1") -OutputFile (Join-Path $BuildDir "Expand-Text.exe")
 
     Write-Host "Compiling AutoHotkey script..." -ForegroundColor Green
     $ahkCompiler = Get-Command Ahk2Exe.exe -ErrorAction SilentlyContinue
@@ -58,16 +61,16 @@ function Build-Executables {
         Write-Error "AutoHotkey Compiler (Ahk2Exe.exe) not found. Please run '.\Build.ps1 -Target setup' as Admin."
         exit 1
     }
-    
-    # ✅ Define the full path to the desired base file
+
+    # Use the exact base file path that previously worked for you.
     $ahkBaseFile = Join-Path $AhkDir "v2\AutoHotkey64.exe"
 
     $ahkInput = Join-Path $SourceDir $AutoHotkeyScript
     $ahkOutput = Join-Path $BuildDir ($AutoHotkeyScript -replace '.ahk$', '.exe')
 
-    # ✅ Use the full, quoted path in the compiler command
+    # Use the exact compiler command that previously worked for you.
     & $ahkCompiler.Source /in "`"$ahkInput`"" /out "`"$ahkOutput`"" /base "`"$ahkBaseFile`""
-    
+
     Write-Host "Build complete." -ForegroundColor Cyan
 }
 
