@@ -109,7 +109,7 @@ Once your environment is set up, you can use the following targets with the `Bui
     **Example:**
 
     ```powershell
-    .\Build.ps1 -Target winget -ReleaseUrl "https://github.com/RAOEUS/Tylex/releases/download/v1.0.0/Tylex-1.0.0.zip" -PackageVersion "1.0.0"
+    .\Build.ps1 -Target winget -ReleaseUrl "https://github.com/RAOEUS/tylex-windows/releases/download/1.0.0/Tylex-Setup-v1.0.0.exe" -PackageVersion "1.0.0"
     ```
 
 ---
