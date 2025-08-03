@@ -1,46 +1,64 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Tylex Settings</title>
-    <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-    <h1 id="settings_title">Tylex Settings</h1>
+	<head>
+		<meta charset="UTF-8">
+		<title>Tylex Settings</title>
+		<link rel="stylesheet" href="css/style.css">
+		<style>
+/* allow the entire settings page to scroll if it overflows */
+body {
+	overflow-y: auto !important;
+}
+	/* limit the grid to the viewport height minus the header */
+	.settings-grid {
+		max-height: calc(100vh - 2rem);
+	}
+	body.settings {
+		overflow-y: auto;    /* page-level scroll */
+	}
+	.settings-grid .card{
+		max-width: 100%;
+	}
 
-    <div class="settings-grid">
-        <div class="card">
-            <h2 id="manage_snippets">Manage Snippets</h2>
-            <div class="snippet-table-container">
-                <table class="snippet-table">
-                    <thead>
-                        <tr>
-                            <th>Abbreviation</th>
-                            <th>Expansion</th>
-                            <th class="actions-col">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="snippet-list-body">
-                        <!-- Snippets will be injected here -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-        <div class="card">
-            <h2 id="add_new_snippet">Add / Edit Snippet</h2>
-            <form id="snippet-form">
-                <div class="form-group">
-                    <label id="abbreviation_label" for="abbv-input">Abbreviation:</label>
-                    <input type="text" id="abbv-input" required>
-                </div>
-                <div class="form-group">
-                    <label id="expansion_label" for="value-input">Expansion Text:</label>
-                    <textarea id="value-input" required></textarea>
-                </div>
-                <button type="submit" class="btn" id="save_button">Save Snippet</button>
-            </form>
-        </div>
-    </div>
-    <script src="js/settings.js"></script>
-</body>
+		</style>
+	</head>
+	<body class="settings">
+		<h1 id="settings_title">Tylex Settings</h1>
+
+		<div class="settings-grid">
+			<div class="card">
+				<h2 id="manage_snippets">Manage Snippets</h2>
+				<button id="reset-counts-button" class="btn">Reset All Usage Counts</button>
+				<div class="snippet-table-container">
+					<table class="snippet-table">
+						<thead>
+							<tr>
+								<th>Abbreviation</th>
+								<th>Expansion</th>
+								<th class="actions-col">Actions</th>
+							</tr>
+						</thead>
+						<tbody id="snippet-list-body">
+							<!-- Snippets will be injected here -->
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<div class="card">
+				<h2 id="add_new_snippet">Add / Edit Snippet</h2>
+				<form id="snippet-form">
+					<div class="form-group">
+						<label id="abbreviation_label" for="abbv-input">Abbreviation:</label>
+						<input type="text" id="abbv-input" required autofocus>
+					</div>
+					<div class="form-group">
+						<label id="expansion_label" for="value-input">Expansion Text:</label>
+						<textarea id="value-input" required></textarea>
+					</div>
+					<button type="submit" class="btn" id="save_button">Save Snippet</button>
+				</form>
+			</div>
+		</div>
+		<script src="js/settings.js"></script>
+	</body>
 </html>

@@ -170,3 +170,14 @@ def get_translations(lang="en", conn=None):
         conn.close()
 
     return {row["key"]: row["text"] for row in rows}
+
+def reset_usage_counts(conn=None):
+    close_conn = False
+    if conn is None:
+        conn = get_db_connection()
+        close_conn = True
+    with conn:
+        conn.execute("UPDATE snippets SET usage_count = 0")
+    if close_conn:
+        conn.close()
+    return {"status": "success"}
