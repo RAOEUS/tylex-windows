@@ -5,10 +5,12 @@
 
 ; Super + z to run the expander script
 #z::
-Run, Expand-Text.exe
-return
+{
+    Run("Expand-Text.exe")
+}
 
 ; Super + Shift + z to run the add script
 #+z::
-Run, Add-Text.exe
-return
+{
+    Run("Add-Text.exe")
+}
