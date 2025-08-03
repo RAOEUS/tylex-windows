@@ -1,0 +1,178 @@
+:root {
+    --bg-color: #2d2d30;
+    --text-color: #f1f1f1;
+    --input-bg: #3c3c3c;
+    --border-color: #555;
+    --highlight-bg: #007acc;
+    --highlight-text: #ffffff;
+    --secondary-text: #a0a0a0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 1rem;
+    overflow: hidden; /* Prevent scrollbars */
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    box-sizing: border-box;
+}
+
+/* --- Search Window Styles --- */
+#search-box {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.75rem;
+    font-size: 1.2rem;
+    border: 1px solid var(--border-color);
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border-radius: 6px;
+    margin-bottom: 1rem;
+}
+
+#search-box:focus {
+    outline: none;
+    border-color: var(--highlight-bg);
+}
+
+#results-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+#results-list li {
+    padding: 0.8rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#results-list li.selected {
+    background-color: var(--highlight-bg);
+    color: var(--highlight-text);
+}
+
+#results-list li .abbv {
+    font-weight: 600;
+}
+
+#results-list li .value {
+    color: var(--secondary-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60%;
+}
+
+#results-list li.selected .value {
+    color: var(--highlight-text);
+}
+
+/* --- Settings Window Styles --- */
+h1 {
+    font-weight: 500;
+    color: var(--highlight-bg);
+}
+
+.settings-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    padding-top: 1rem;
+}
+
+.card {
+    background-color: var(--input-bg);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.card h2 {
+    margin-top: 0;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--secondary-text);
+}
+
+.form-group input, .form-group textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.6rem;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.btn {
+    padding: 0.7rem 1.5rem;
+    border: none;
+    background-color: var(--highlight-bg);
+    color: var(--highlight-text);
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 500;
+    float: right;
+}
+
+.snippet-table-container {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.snippet-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.snippet-table th, .snippet-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.snippet-table th {
+    font-weight: 600;
+    color: var(--secondary-text);
+}
+
+.snippet-table .abbv-col { font-weight: 600; }
+.snippet-table .value-col { color: var(--secondary-text); }
+.snippet-table .actions-col { text-align: right; }
+
+.btn-delete {
+    background: #c0392b;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+    border-radius: 4px;
+}
