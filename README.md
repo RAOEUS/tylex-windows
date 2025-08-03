@@ -32,6 +32,10 @@ winget install RAOEUS.Tylex
 
 If you want to modify the scripts or contribute to development, you can build the project directly from the source code. See the **[Building from Source](#building-from-source)** section below for detailed instructions.
 
+### Method 3: Download the Installer
+
+[Download the installer here](https://github.com/RAOEUS/tylex-windows/releases/download/1.0.0/Tylex-Setup-v1.0.0.exe) and double click to run it.
+
 ---
 
 ## How to Use
