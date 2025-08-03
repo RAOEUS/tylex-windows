@@ -1,6 +1,6 @@
 # Tylex for Windows
 
-A simple, fast, and powerful text expansion utility for Windows.
+A simple text expansion utility for Windows.
 
 Tylex lets you create short abbreviations (e.g., `em`) that expand into longer phrases or snippets of text (e.g., youremail@example.com). It's built with PowerShell and AutoHotkey, making it lightweight, transparent, and easy to customize.
 
