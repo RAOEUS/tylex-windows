@@ -44,5 +44,5 @@ if ($null -eq $choice) { return }
 ($expansions | Where-Object { $_.key -eq $choice.key }).usage++
 $jsonParts = foreach ($item in $expansions) { $escapedKey = $item.key -replace '\\', '\\' -replace '"', '\"'; $escapedValue = $item.value -replace '\\', '\\' -replace '"', '\"'; "  {`n    `"key`": `"$escapedKey`",`n    `"value`": `"$escapedValue`",`n    `"usage`": $($item.usage)`n  }" }
 "[`n" + ($jsonParts -join ",`n") + "`n]" | Set-Content -Path $expFile
-Start-Sleep -Milliseconds 400
+Start-Sleep -Milliseconds 500
 [System.Windows.Forms.SendKeys]::SendWait($choice.value)
