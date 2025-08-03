@@ -47,7 +47,6 @@ function Build-Executables {
     Write-Host "Compiling PowerShell scripts..." -ForegroundColor Green
     if (-not (Get-Module -ListAvailable -Name PS2EXE)) { Write-Error "Module PS2EXE is not installed. Run '.\Build.ps1 -Target setup' as Admin."; exit 1 }
 
-    # ✅ Compile BOTH scripts with -noConsole to create windowed apps
     foreach ($script in $PowerShellScripts) {
         $inputFile = Join-Path $SourceDir $script
         $outputFile = Join-Path $BuildDir ($script -replace '.ps1$', '.exe')
@@ -69,63 +68,57 @@ function Build-Executables {
     & $ahkCompiler.Source /in "`"$ahkInput`"" /out "`"$ahkOutput`"" /base "`"$ahkBaseFile`""
     
     Write-Host "Build complete." -ForegroundColor Cyan
+
+    # ✅ NEW: Automatically build the Inno Setup installer
+    $iscc = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+    if (-not $iscc) {
+        Write-Error "Inno Setup Compiler (ISCC.exe) not found. Please install Inno Setup and ensure it's in your PATH."
+        exit 1
+    }
+    Write-Host "Building installer package..." -ForegroundColor Green
+    & $iscc.Source "setup.iss"
 }
 
 # --- Main Logic (Targets) ---
 switch ($Target) {
-    "setup" {
+  "setup" {
         if (-not (Test-Admin)) {
             Write-Error "Setup requires Administrator privileges to install tools. Please re-run from an elevated PowerShell terminal."
             exit 1
         }
         Write-Host "Setting up build environment..." -ForegroundColor Yellow
 
-        # 1. Install main AutoHotkey package
-        if (Test-Path $AhkDir) {
-            Write-Host "AutoHotkey seems to be installed." -ForegroundColor Gray
-        } else {
-            Write-Host "Installing AutoHotkey via winget..." -ForegroundColor Green
-            winget install --id AutoHotkey.AutoHotkey -e --source winget --accept-package-agreements
-        }
-        
-        # 2. Install the AHK compiler if not present
-        $compilerPath = Join-Path $AhkDir "Compiler"
-        if (Test-Path (Join-Path $compilerPath "Ahk2Exe.exe")) {
-            Write-Host "AutoHotkey Compiler is already installed." -ForegroundColor Gray
-        } else {
-            Write-Host "Installing AutoHotkey Compiler..." -ForegroundColor Green
-            $ahkInstallerScript = Join-Path $AhkDir "UX\install-ahk2exe.ahk"
-            $ahkExe = Join-Path $AhkDir "v2\AutoHotkey.exe"
-            if (Test-Path $ahkInstallerScript) {
-                Write-Host "Please follow any on-screen prompts from the AHK compiler installer. Press enter when installation complete to continue." -ForegroundColor Yellow
-                Start-Process -FilePath $ahkExe -ArgumentList "`"$ahkInstallerScript`"" -Wait
-            } else {
-                Write-Error "Could not find AHK compiler installer script. Please install manually."
-            }
-        }
+        # 1 & 2. Install AutoHotkey and its compiler
+        if (Test-Path $AhkDir) { Write-Host "AutoHotkey seems to be installed." -ForegroundColor Gray } 
+        else { Write-Host "Installing AutoHotkey via winget..."; winget install --id AutoHotkey.AutoHotkey -e --source winget --accept-package-agreements }
+        $compilerPath = Join-Path $AhkDir "Compiler"; if (Test-Path (Join-Path $compilerPath "Ahk2Exe.exe")) { Write-Host "AutoHotkey Compiler is already installed." -ForegroundColor Gray }
+        else { Write-Host "Installing AutoHotkey Compiler..."; $ahkInstallerScript = Join-Path $AhkDir "UX\install-ahk2exe.ahk"; $ahkExe = Join-Path $AhkDir "v2\AutoHotkey.exe"; if (Test-Path $ahkInstallerScript) { Start-Process -FilePath $ahkExe -ArgumentList "`"$ahkInstallerScript`"" -Wait } else { Write-Error "Could not find AHK compiler installer script." } }
 
-        # 3. Add AHK Compiler to the system PATH if not already there
-        $machinePath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
-        if ($machinePath -notlike "*$compilerPath*") {
-            Write-Host "Adding AHK Compiler to system PATH..." -ForegroundColor Green
-            $newPath = "$machinePath;$compilerPath"
-            [System.Environment]::SetEnvironmentVariable('Path', $newPath, 'Machine')
-            # Update current session's path as well
-            $env:Path = $newPath
-            Write-Host "PATH updated. Please restart your terminal after this script finishes for changes to take full effect." -ForegroundColor Yellow
-        } else {
-            Write-Host "AHK Compiler is already in the system PATH." -ForegroundColor Gray
-        }
+        # 3. Add AHK Compiler to PATH
+        $machinePath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine'); if ($machinePath -notlike "*$compilerPath*") { Write-Host "Adding AHK Compiler to system PATH..."; $newPath = "$machinePath;$compilerPath"; [System.Environment]::SetEnvironmentVariable('Path', $newPath, 'Machine'); $env:Path = $newPath }
 
         # 4. Install PS2EXE PowerShell Module
-        if (Get-Module -ListAvailable -Name PS2EXE) {
-            Write-Host "PowerShell module 'PS2EXE' is already installed." -ForegroundColor Gray
+        if (Get-Module -ListAvailable -Name PS2EXE) { Write-Host "PowerShell module 'PS2EXE' is already installed." -ForegroundColor Gray } 
+        else { Write-Host "Installing PowerShell module 'PS2EXE'..."; Install-Module -Name PS2EXE -Repository PSGallery -Force -Scope CurrentUser }
+
+        # ✅ 5. Manually Define Inno Setup Path and Add to Environment
+        # Using the correct path you found
+        $innoDir = "C:\Users\Zach\AppData\Local\Programs\Inno Setup 6"
+        
+        Write-Host "Using Inno Setup path: $innoDir" -ForegroundColor Cyan
+
+        # Add the Inno Setup path to the system PATH
+        $machinePath = [System.Environment]::GetEnvironmentVariable('Path', 'Machine')
+        if ($machinePath -notlike "*$innoDir*") {
+            Write-Host "Adding '$innoDir' to system PATH..." -ForegroundColor Green
+            $newPath = "$machinePath;$innoDir"
+            [System.Environment]::SetEnvironmentVariable('Path', $newPath, 'Machine')
+            $env:Path = $newPath
         } else {
-            Write-Host "Installing PowerShell module 'PS2EXE'..." -ForegroundColor Green
-            Install-Module -Name PS2EXE -Repository PSGallery -Force -Scope CurrentUser
+            Write-Host "Inno Setup is already in the system PATH." -ForegroundColor Gray
         }
 
-        Write-Host "Environment setup complete. You can now run the 'build' target." -ForegroundColor Cyan
+        Write-Host "✅ Environment setup complete. Please restart your terminal, then run the 'build' target." -ForegroundColor Cyan
     }
 
     "build" { Build-Executables }
@@ -192,36 +185,41 @@ switch ($Target) {
         Write-Host "Uninstallation complete." -ForegroundColor Cyan
     }
 
-    "winget" {
-        if ([string]::IsNullOrWhiteSpace($ReleaseUrl)) { Write-Error "The -ReleaseUrl parameter is required."; exit 1 }
-        Build-Executables
-        $zipPath = Join-Path $ReleaseDir "$AppName-$PackageVersion.zip"; Compress-Archive -Path "$BuildDir\*" -DestinationPath $zipPath -Force
-        $fileHash = (Get-FileHash $zipPath -Algorithm SHA256).Hash
-        $manifestDir = Join-Path $SourceDir "winget-manifest\manifests\$($Publisher.ToLower())\$AppName\$PackageVersion"; New-Item -Path $manifestDir -ItemType Directory -Force | Out-Null
-        $packageIdentifier = "$Publisher.$AppName"
-        $versionYaml = @"
+"winget" {
+    # This target no longer needs to build. It just generates the manifest.
+    if ([string]::IsNullOrWhiteSpace($ReleaseUrl)) { Write-Error "The -ReleaseUrl parameter is required."; exit 1 }
+    
+    # Get the installer from the 'Output' sub-directory created by Inno Setup
+    $installerName = "Tylex-Setup-v$($PackageVersion).exe"
+    $installerPath = Join-Path $SourceDir "Output\$($installerName)"
+    if (-not (Test-Path $installerPath)) { Write-Error "Installer not found at '$installerPath'. Run the 'build' target first." ; exit 1}
+
+    $fileHash = (Get-FileHash $installerPath -Algorithm SHA256).Hash
+    $manifestDir = Join-Path $SourceDir "winget-manifest\manifests\$($Publisher.ToLower())\$AppName\$PackageVersion"; New-Item -Path $manifestDir -ItemType Directory -Force | Out-Null
+    $packageIdentifier = "$Publisher.$AppName"
+    
+    # ✅ Updated YAML to specify the installer type is 'inno'
+    $installerYaml = @"
+PackageIdentifier: $packageIdentifier
+PackageVersion: $PackageVersion
+InstallerType: inno
+Installers:
+- Architecture: x64
+  InstallerUrl: $ReleaseUrl
+  InstallerSha256: $fileHash
+ManifestType: installer
+ManifestVersion: 1.6.0
+"@
+
+    # (The rest of the winget target is the same)
+    $versionYaml = @"
 PackageIdentifier: $packageIdentifier
 PackageVersion: $PackageVersion
 DefaultLocale: en-US
 ManifestType: version
 ManifestVersion: 1.6.0
 "@
-        $installerYaml = @"
-PackageIdentifier: $packageIdentifier
-PackageVersion: $PackageVersion
-InstallerType: zip
-Installers:
-- Architecture: x64
-  InstallerUrl: $ReleaseUrl
-  InstallerSha256: $fileHash
-  NestedInstallerType: portable
-  NestedInstallerFiles:
-  - RelativeFilePath: TylexLauncher.exe
-    PortableCommandAlias: TylexLauncher.exe
-ManifestType: installer
-ManifestVersion: 1.6.0
-"@
-        $localeYaml = @"
+    $localeYaml = @"
 PackageIdentifier: $packageIdentifier
 PackageVersion: $PackageVersion
 PackageLocale: en-US
@@ -237,9 +235,9 @@ $($Tags | ForEach-Object { " - $_" })
 ManifestType: defaultLocale
 ManifestVersion: 1.6.0
 "@
-        Set-Content -Path (Join-Path $manifestDir "$packageIdentifier.yaml") -Value $versionYaml
-        Set-Content -Path (Join-Path $manifestDir "$packageIdentifier.installer.yaml") -Value $installerYaml
-        Set-Content -Path (Join-Path $manifestDir "$packageIdentifier.locale.en-US.yaml") -Value $localeYaml
-        Write-Host "Winget manifest created successfully." -ForegroundColor Cyan
-    }
+    Set-Content -Path (Join-Path $manifestDir "$packageIdentifier.yaml") -Value $versionYaml
+    Set-Content -Path (Join-Path $manifestDir "$packageIdentifier.installer.yaml") -Value $installerYaml
+    Set-Content -Path (Join-Path $manifestDir "$packageIdentifier.locale.en-US.yaml") -Value $localeYaml
+    Write-Host "Winget manifest created successfully." -ForegroundColor Cyan
+}
 }
