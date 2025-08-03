@@ -97,7 +97,7 @@ Once your environment is set up, you can use the following targets with the `Bui
     .\Build.ps1 -Target uninstall
     ```
 
-  #### `winget`
+  * #### `winget`
 
     Generates the necessary YAML manifest files for submitting the application to the Windows Package Manager repository. This target first builds the project, zips the release files, calculates the SHA256 hash, and then creates the manifest files in a `winget-manifest` folder.
 
